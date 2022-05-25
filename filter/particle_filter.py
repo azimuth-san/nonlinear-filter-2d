@@ -26,11 +26,13 @@ class ParticleFilter:
         self.likelihood = likelihood
 
         # initialize the ensembles.
-        self.predict_ensemble = self._initialize_predict_ensemble(
+        self.filter_ensemble = self._initialize_ensemble(
                                         mu_x_init, cov_x_init, num_particles)
-        self.filter_ensemble = None
+        self.x_posterior = np.mean(self.filter_ensemble, axis=1)
 
-    def _initialize_predict_ensemble(self, mu, cov, num):
+        self.predict_ensemble = None
+
+    def _initialize_ensemble(self, mu, cov, num):
         """Initialze a predict ensemble."""
 
         # ensemble.shape : (dimension of x[t], number of particle)
@@ -67,6 +69,8 @@ class ParticleFilter:
             # ensemble.shape : (dimension of x[t], number of particles)
             self.filter_ensemble[:, i] = self.predict_ensemble[:, j]
 
+        self.x_posterior = np.mean(self.filter_ensemble, axis=1)
+
     def _predict(self, t, u):
         """Calculate the prediction ensemble."""
 
@@ -78,10 +82,13 @@ class ParticleFilter:
                                         t, self.filter_ensemble,
                                         u, w_ensemble)
 
-    def estimate(self, t, y, u=0):
+    def estimate(self, t, y, u_prev=0):
         """Estimate the state variable."""
 
-        self._filtering(t, y)
-        self._predict(t, u)
+        # predict the x(t|t-1), need a previous input u(t-1)
+        self._predict(t-1, u_prev)
 
-        return np.mean(self.filter_ensemble, axis=1)
+        # estimate the x(t|t)
+        self._filtering(t, y)
+
+        return self.x_posterior

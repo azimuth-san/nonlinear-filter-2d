@@ -19,7 +19,7 @@ pip3 install numpy matplotlib
 
 # Model
 The object moves with constant velocity [3].
-![](fig/discrete-time-2d-model.png)
+![](fig/constant-velocity-object.png)
 
 * x : state variable. It's not observed. position and velocity. 
 * z : obesrvation variable. distance and angle.
@@ -38,7 +38,7 @@ The nonlinear filters estimate x from z.
 python3 main.py --filter pf --num_particles 300 
 ```
 
-![](fig/tracking_result_pf_seed91.png)
+![](fig/tracking_result_pf_seed66.png)
 
 The initial point [x_0, y_0] is set [-100, 50] and the number of particles is set 300 by default.
 The figure is saved in the "result" directory. Fix the seed of random numbers in reproducing.
@@ -67,32 +67,32 @@ In the EKF, estimated values are occasionally disterbed due to linearlization er
 
   | Seed | PF (300) | UKF | EKF |
   | --- | --- | --- | ---|
-  | 1  |   3.22   |   2.98   | **2.95** |
-  | 2  |   4.46   |   3.50   | **3.44** |
-  | 3  |   2.69   | **2.58** |   13.23  |
-  | 4  |   3.74   |   3.77   | **3.66** |
-  | 5  |   3.24   | **2.96** |   2.99   |
-  | 6  | **3.10** |   3.11   |   3.12   |
-  | 7  |   4.28   |   3.61   | **3.50** |
-  | 8  |   2.69   |   2.62   | **2.48** |
-  | 9  |   3.60   |   3.49   | **3.40** |
-  | 10 |   2.95   | **2.76** |   12.95  |
+  | 1  |   3.64   |   2.86    |   13.02   |
+  | 2  |   3.71   | **3.526** |   3.527   |
+  | 3  |   2.99   | **2.70**  |   2.71    |
+  | 4  |   4.31   |   3.723   | **3.716** |
+  | 5  |   3.09   |   2.93    | **2.92**  |
+  | 6  | **3.12** |   3.302   | **3.297** |
+  | 7  |   3.94   | **3.51**  |   3.52    |
+  | 8  |   2.66   | **2.59**  |   2.61    |
+  | 9  |   5.09   |   3.62    | **3.55**  |
+  | 10 |   2.83   | **2.74**  |   13.05   |
 <br>
 
 * Mean processing time to estimate [msec]
 
   | Seed | PF (300) | UKF | EKF |
   | --- | --- | --- | ---|
-  | 1  | 3.02 |   0.57   | **0.38** |
-  | 2  | 2.83 |   0.55   | **0.38** |
-  | 3  | 2.93 |   0.74   | **0.38** |
-  | 4  | 2.91 |   0.55   | **0.38** |
-  | 5  | 2.89 |   0.54   | **0.38** |
-  | 6  | 2.82 |   0.54   | **0.40** |
-  | 7  | 2.88 |   0.55   | **0.38** |
-  | 8  | 3.01 |   0.60   | **0.38** |
-  | 9  | 2.88 |   0.54   | **0.38** |
-  | 10 | 3.05 |   0.54   | **0.38** |
+  | 1  | 2.76 |   0.50   | **0.36** |
+  | 2  | 2.90 |   0.54   | **0.37** |
+  | 3  | 2.96 |   0.54   | **0.37** |
+  | 4  | 2.85 |   0.53   | **0.36** |
+  | 5  | 3.06 |   0.59   | **0.36** |
+  | 6  | 3.03 |   0.54   | **0.36** |
+  | 7  | 2.93 |   0.53   | **0.37** |
+  | 8  | 2.89 |   0.53   | **0.36** |
+  | 9  | 2.82 |   0.54   | **0.37** |
+  | 10 | 3.00 |   0.73   | **0.36** |
 
 On the whole, the UKF shows good performance in terms of precision and processing time against this model.
 

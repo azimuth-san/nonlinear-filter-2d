@@ -20,7 +20,7 @@ $$
 \begin{bmatrix}
 \sqrt{x_t ^2 + y_t ^2}  \\
 {\rm{tan}}^{^-1}(\frac{y_t}{x_t})  \\
-\end{bmatrix} \boldsymbol{x}_{t} + \boldsymbol{v}_t
+\end{bmatrix} + \boldsymbol{v}_t
 $$
 
 $$

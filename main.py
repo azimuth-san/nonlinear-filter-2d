@@ -43,7 +43,7 @@ def parse_arguments():
                         default=[-100, 25, 50, -25],
                         help='[m, m/s, m, m/s]')
     parser.add_argument('--initial_covariance', type=float, nargs=4,
-                        default=[1000, 100, 1000, 100])
+                        default=[100, 800, 100, 800])
 
     parser.add_argument('--cov_w', type=float, nargs=2,
                         default=[300, 300],
@@ -116,8 +116,8 @@ def generate_time_series_data(num_steps, model, initial_point,
         w = system_noise(1)
         v = observation_noise(1)
 
-        if t < (num_steps - 1):
-            x[:, t+1] = model.state_equation(t, x[:, t], 0, w)
+        if t > 0:
+            x[:, t] = model.state_equation(t, x[:, t-1], 0, w)
         z[:, t] = model.observation_equation(t, x[:, t], v)
 
     return x, z
@@ -126,8 +126,9 @@ def generate_time_series_data(num_steps, model, initial_point,
 def estimate_all_samples(estimator, x, z):
 
     x_est = np.zeros_like(x)
+    x_est[:, 0] = estimator.x_posterior
     begin = time.time()
-    for t in range(z.shape[1]):
+    for t in range(1, z.shape[1]):
 
         # estimate the state variable from a observation variable.
         x_est[:, t] = estimator.estimate(t, z[:, t])
@@ -157,8 +158,12 @@ def main():
     num_steps = args.steps
     x, z = generate_time_series_data(num_steps, model, initial_point,
                                      system_noise, observation_noise)
+
+    # set the initial state from the initial measurement.
+    initial_state = np.array([z[0, 0]*np.cos(z[1, 0]), 0,
+                              z[0, 0]*np.sin(z[1, 0]), 0])
     estimator = create_nonlinear_filter(args, model,
-                                        initial_point,
+                                        initial_state,
                                         np.diag(args.initial_covariance),
                                         system_noise)
     x_est = estimate_all_samples(estimator, x, z)

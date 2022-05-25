@@ -26,12 +26,12 @@ class ExtendedKalmanFilter:
         self.cov_v = cov_v
 
         # expectaion to estimate.
-        self.x_prior = mu_x_init
-        self.x_posterior = None
+        self.x_prior = None
+        self.x_posterior = mu_x_init
 
         # covariance to estimate.
-        self.P_prior = cov_x_init
-        self.P_posterior = None
+        self.P_prior = None
+        self.P_posterior = cov_x_init
 
         # kalman gain
         self.Gain = None
@@ -68,10 +68,13 @@ class ExtendedKalmanFilter:
         self.x_prior = self.model.state_equation(t, x, u)
         self.P_prior = F @ P @ F.T + L @ Q @ L.T
 
-    def estimate(self, t, y, u=0):
+    def estimate(self, t, y, u_prev=0):
         """Estimate the state variable."""
 
+        # predict the x(t|t-1), need a previous input u(t-1)
+        self._predict(t-1, u_prev)
+
+        # estimate the x(t|t)
         self._filtering(t, y)
-        self._predict(t, u)
 
         return self.x_posterior
