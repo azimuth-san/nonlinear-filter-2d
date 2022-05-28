@@ -1,7 +1,8 @@
 import numpy as np
+from .bayes_filter import BayesFilter
 
 
-class ParticleFilter:
+class ParticleFilter(BayesFilter):
     """Particle filter class."""
 
     def __init__(self, model, mu_x_init, cov_x_init,
@@ -33,14 +34,14 @@ class ParticleFilter:
         self.predict_ensemble = None
 
     def _initialize_ensemble(self, mu, cov, num):
-        """Initialze a predict ensemble."""
+        """Initialze the ensemble."""
 
         # ensemble.shape : (dimension of x[t], number of particle)
         x_ensemble_init = np.random.multivariate_normal(mu, cov, size=num).T
 
         return x_ensemble_init
 
-    def _filtering(self, t, y):
+    def filtering(self, t, y):
         """Calculate the filter ensemble."""
 
         # observation_equation : h(t, x[t], v[t])
@@ -71,7 +72,7 @@ class ParticleFilter:
 
         self.x_posterior = np.mean(self.filter_ensemble, axis=1)
 
-    def _predict(self, t, u):
+    def predict(self, t, u):
         """Calculate the prediction ensemble."""
 
         # w_ensemble.shape : (dimension of w[t], number of particles)
@@ -81,14 +82,3 @@ class ParticleFilter:
         self.predict_ensemble = self.model.state_equation(
                                         t, self.filter_ensemble,
                                         u, w_ensemble)
-
-    def estimate(self, t, y, u_prev=0):
-        """Estimate the state variable."""
-
-        # predict the x(t|t-1), need a previous input u(t-1)
-        self._predict(t-1, u_prev)
-
-        # estimate the x(t|t)
-        self._filtering(t, y)
-
-        return self.x_posterior

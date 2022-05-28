@@ -1,7 +1,8 @@
 import numpy as np
+from .bayes_filter import BayesFilter
 
 
-class UnscentedendKalmanFilter:
+class UnscentedendKalmanFilter(BayesFilter):
     """Unscented kalman filter class."""
 
     def __init__(self, model, mu_x_init, cov_x_init,
@@ -26,7 +27,7 @@ class UnscentedendKalmanFilter:
         self.cov_w = cov_w
         self.cov_v = cov_v
 
-        # expectaion to estimate.
+        # expectation to estimate.
         self.x_prior = None
         self.x_posterior = mu_x_init
 
@@ -67,8 +68,8 @@ class UnscentedendKalmanFilter:
 
         return x_sigmas
 
-    def _filtering(self, t, y):
-        """Filtering step."""
+    def filtering(self, t, y):
+        """Compute the posterior, x[t|t]."""
 
         x_prior, P_prior = self.x_prior, self.P_prior
         x_sigmas = self._compute_sigma_points(x_prior, P_prior)
@@ -92,8 +93,8 @@ class UnscentedendKalmanFilter:
         self.x_posterior = x_prior + K @ (y - y_hat)
         self.P_posterior = P_prior - K @ Py @ K.T
 
-    def _predict(self, t, u):
-        """Prediction step."""
+    def predict(self, t, u):
+        """Compute the prior, x[t+1|t]."""
 
         x_posterior, P_posterior = self.x_posterior, self.P_posterior
         x_sigmas = self._compute_sigma_points(x_posterior, P_posterior)
@@ -104,14 +105,3 @@ class UnscentedendKalmanFilter:
 
         x_error = self.x_prior[:, np.newaxis] - x_sigmas_next
         self.P_prior = (self.weights * x_error) @ x_error.T + self.cov_w
-
-    def estimate(self, t, y, u_prev=0):
-        """Estimate the state variable."""
-
-        # predict the x(t|t-1), need a previous input u(t-1)
-        self._predict(t-1, u_prev)
-
-        # estimate the x(t|t)
-        self._filtering(t, y)
-
-        return self.x_posterior

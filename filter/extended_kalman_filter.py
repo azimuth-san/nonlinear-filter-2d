@@ -1,7 +1,8 @@
 import numpy as np
+from .bayes_filter import BayesFilter
 
 
-class ExtendedKalmanFilter:
+class ExtendedKalmanFilter(BayesFilter):
     """Extended kalman filter class."""
 
     def __init__(self, model, mu_x_init, cov_x_init,
@@ -25,7 +26,7 @@ class ExtendedKalmanFilter:
         self.cov_w = cov_w
         self.cov_v = cov_v
 
-        # expectaion to estimate.
+        # expectation to estimate.
         self.x_prior = None
         self.x_posterior = mu_x_init
 
@@ -36,8 +37,8 @@ class ExtendedKalmanFilter:
         # kalman gain
         self.Gain = None
 
-    def _filtering(self, t, y):
-        """Filtering step."""
+    def filtering(self, t, y):
+        """Compute the posterior, x[t|t]."""
 
         x, P = self.x_prior, self.P_prior
         H = self.model.Jh_x(x)
@@ -55,8 +56,8 @@ class ExtendedKalmanFilter:
         self.x_posterior = x + K @ error
         self.P_posterior = (np.eye(K.shape[0]) - K @ H) @ P
 
-    def _predict(self, t, u):
-        """Prediction step."""
+    def predict(self, t, u):
+        """Compute the prior, x[t+1|t]."""
 
         x, P = self.x_posterior, self.P_posterior
         F = self.model.Jf_x(x)
@@ -67,14 +68,3 @@ class ExtendedKalmanFilter:
         # state_equation : f(t, x[t], u[t], w[t])
         self.x_prior = self.model.state_equation(t, x, u)
         self.P_prior = F @ P @ F.T + L @ Q @ L.T
-
-    def estimate(self, t, y, u_prev=0):
-        """Estimate the state variable."""
-
-        # predict the x(t|t-1), need a previous input u(t-1)
-        self._predict(t-1, u_prev)
-
-        # estimate the x(t|t)
-        self._filtering(t, y)
-
-        return self.x_posterior
