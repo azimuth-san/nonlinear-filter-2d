@@ -1,8 +1,17 @@
 import numpy as np
+from .state_space_model import StateSpaceModel
 
 
-class ConstantVelocity2d:
+class ConstantVelocity2d(StateSpaceModel):
     """Moving object with constant velocity."""
+
+    # dimensions
+    NDIM = {'x': 4,  # state
+            'y': 2,  # output
+            'u': 0,  # control input
+            'w': 2,  # system noise
+            'v': 2   # observation noise
+            }
 
     def __init__(self, dt=0.1):
 
@@ -52,7 +61,7 @@ class ConstantVelocity2d:
 
         return y
 
-    def Jf_x(self, x):
+    def Jf_x(self, t, x):
         """The Jacobian of the system model.
 
         (df/dx)(x), x[t+1] = f(x[t], u[t], w[t], t).
@@ -63,7 +72,7 @@ class ConstantVelocity2d:
                      [0, 0, 0, 1]])
         return F
 
-    def Jf_w(self, x):
+    def Jf_w(self, t, x):
         """The Jacobian of the state equation.
 
         (df/dw)(x), x[t+1] = f(x[t], u[t], w[t], t).
@@ -74,7 +83,7 @@ class ConstantVelocity2d:
                      [0, self.dt]])
         return L
 
-    def Jh_x(self, x):
+    def Jh_x(self, t, x):
         """The Jacobian of the observation equation.
 
         (dh/dx)(x), y[t] = h(x[t], v[t], t)
@@ -84,7 +93,7 @@ class ConstantVelocity2d:
                      [-x[2]/d_square, 0, x[0]/d_square, 0]])
         return H
 
-    def Jh_v(self, x):
+    def Jh_v(self, t, x):
         """The Jacobian of the observation equation.
 
         (dh/dv)(x), y[t] = h(x[t], v[t], t)

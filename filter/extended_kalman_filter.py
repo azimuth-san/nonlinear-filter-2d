@@ -41,8 +41,8 @@ class ExtendedKalmanFilter(BayesFilter):
         """Compute the posterior, x[t|t]."""
 
         x, P = self.x_prior, self.P_prior
-        H = self.model.Jh_x(x)
-        M = self.model.Jh_v(x)
+        H = self.model.Jh_x(t, x)
+        M = self.model.Jh_v(t, x)
         R = self.cov_v
 
         # update the kalman gain.
@@ -60,8 +60,8 @@ class ExtendedKalmanFilter(BayesFilter):
         """Compute the prior, x[t+1|t]."""
 
         x, P = self.x_posterior, self.P_posterior
-        F = self.model.Jf_x(x)
-        L = self.model.Jf_w(x)
+        F = self.model.Jf_x(t, x)
+        L = self.model.Jf_w(t, x)
         Q = self.cov_w
 
         # update the prior.

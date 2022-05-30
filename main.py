@@ -12,14 +12,6 @@ from filter import UnscentedendKalmanFilter
 from filter.likelihood import LikelihoodGaussian
 
 
-# the number dimentions of the model.
-NDIM = {'x': 4,  # state
-        'z': 2,  # output
-        'w': 2,  # system noise
-        'v': 2,  # observation noise
-        }
-
-
 def parse_arguments():
     """Parse optional arguments."""
 
@@ -90,7 +82,7 @@ def create_nonlinear_filter(args, model, x_init, cov_x, system_noise):
         cov_additive_w = L @ np.diag(args.cov_w) @ L.T
 
         # see the observation equation of the model
-        M = np.eye(NDIM['v'])
+        M = np.eye(model.NDIM['v'])
         cov_additive_v = M @ np.diag(args.cov_v) @ M.T
 
         estimator = UnscentedendKalmanFilter(
@@ -106,9 +98,9 @@ def create_nonlinear_filter(args, model, x_init, cov_x, system_noise):
 def generate_time_series_data(num_steps, model, initial_point,
                               system_noise, observation_noise):
 
-    x = np.zeros((NDIM['x'], num_steps))
+    x = np.zeros((model.NDIM['x'], num_steps))
     x[:, 0] = initial_point
-    z = np.zeros((NDIM['z'], num_steps))
+    z = np.zeros((model.NDIM['y'], num_steps))
 
     # generate the target dataset．
     for t in range(num_steps):
@@ -151,8 +143,10 @@ def main():
         np.random.seed(args.seed)
 
     model = ConstantVelocity2d(args.dt)
-    system_noise = GaussianNoise(np.zeros(NDIM['w']), np.diag(args.cov_w))
-    observation_noise = GaussianNoise(np.zeros(NDIM['v']), np.diag(args.cov_v))
+    system_noise = GaussianNoise(np.zeros(model.NDIM['w']),
+                                 np.diag(args.cov_w))
+    observation_noise = GaussianNoise(np.zeros(model.NDIM['v']),
+                                      np.diag(args.cov_v))
     initial_point = np.array(args.initial_point)
 
     num_steps = args.steps
