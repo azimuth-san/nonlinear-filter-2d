@@ -109,7 +109,7 @@ def generate_time_series_data(num_steps, model, initial_point,
         v = observation_noise(1)
 
         if t > 0:
-            x[:, t] = model.state_equation(t, x[:, t-1], 0, w)
+            x[:, t] = model.state_equation(t-1, x[:, t-1], 0, w)
         z[:, t] = model.observation_equation(t, x[:, t], v)
 
     return x, z
