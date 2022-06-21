@@ -5,8 +5,7 @@ from .bayes_filter import BayesFilter
 class UnscentedendKalmanFilter(BayesFilter):
     """Unscented kalman filter class."""
 
-    def __init__(self, model, mu_x_init, cov_x_init,
-                 cov_w, cov_v,
+    def __init__(self, model, cov_w, cov_v,
                  kappa=0, decompose_method='cholesky'):
         """
         model
@@ -27,25 +26,26 @@ class UnscentedendKalmanFilter(BayesFilter):
         self.cov_w = cov_w
         self.cov_v = cov_v
 
-        # expectation to estimate.
-        self.x_prior = None
-        self.x_posterior = mu_x_init
-
-        # covariance to estimate.
-        self.P_prior = None
-        self.P_posterior = cov_x_init
+        # posterior
+        self.x_post = None
+        self.P_post = None
 
         # kalman gain
         self.Gain = None
 
         # weights of sigma points
-        n = mu_x_init.shape[0]
+        n = self.model.NDIM['x']
         self.weights = np.zeros(2 * n + 1)
         self.weights[0] = kappa / (n + kappa)
         self.weights[1:] = 1 / (2 * (n + kappa))
         self.kappa = kappa
 
         self.decompose_method = decompose_method.lower()
+
+    def init_state_variable(self, x, P):
+        """Initialize state variables."""
+        self.x_post = x
+        self.P_post = P
 
     def _compute_sigma_points(self, x_center, P):
         """Compute sigma points."""
@@ -68,10 +68,9 @@ class UnscentedendKalmanFilter(BayesFilter):
 
         return x_sigmas
 
-    def filtering(self, t, y):
+    def filtering(self, t, x_prior, P_prior, y):
         """Compute the posterior, x[t|t]."""
 
-        x_prior, P_prior = self.x_prior, self.P_prior
         x_sigmas = self._compute_sigma_points(x_prior, P_prior)
         y_sigmas = self.model.observation_equation(t, x_sigmas)
         y_hat = np.sum(self.weights * y_sigmas, axis=1)
@@ -87,21 +86,35 @@ class UnscentedendKalmanFilter(BayesFilter):
 
         # update the kalman gain.
         self.Gain = Pxy @ np.linalg.inv(Py)
-        K = self.Gain
 
         # update the posterior.
-        self.x_posterior = x_prior + K @ (y - y_hat)
-        self.P_posterior = P_prior - K @ Py @ K.T
+        x_post = x_prior + self.Gain @ (y - y_hat)
+        P_post = P_prior - self.Gain @ Py @ self.Gain.T
 
-    def predict(self, t, u):
+        return x_post, P_post
+
+    def predict(self, t, x_post, P_post, u):
         """Compute the prior, x[t+1|t]."""
 
-        x_posterior, P_posterior = self.x_posterior, self.P_posterior
-        x_sigmas = self._compute_sigma_points(x_posterior, P_posterior)
+        x_sigmas = self._compute_sigma_points(x_post, P_post)
         x_sigmas_next = self.model.state_equation(t, x_sigmas, u)
 
         # update the prior.
-        self.x_prior = np.sum(self.weights * x_sigmas_next, axis=1)
+        x_prior = np.sum(self.weights * x_sigmas_next, axis=1)
 
-        x_error = self.x_prior[:, np.newaxis] - x_sigmas_next
-        self.P_prior = (self.weights * x_error) @ x_error.T + self.cov_w
+        x_error = x_prior[:, np.newaxis] - x_sigmas_next
+        P_prior = (self.weights * x_error) @ x_error.T + self.cov_w
+
+        return x_prior, P_prior
+
+    def update_state_variable(self, t, y, u_prev):
+        """Update the state variables."""
+
+        # compute x[t|t-1]. need u[t-1], previous input.
+        x_prior, P_prior = self.predict(
+                            t-1, self.x_post, self.P_post, u_prev)
+
+        # compute x[t|t]
+        self.x_post, self.P_post = self.filtering(t, x_prior, P_prior, y)
+
+        return self.x_post, x_prior

@@ -5,8 +5,7 @@ from .bayes_filter import BayesFilter
 class ParticleFilter(BayesFilter):
     """Particle filter class."""
 
-    def __init__(self, model, mu_x_init, cov_x_init,
-                 system_noise, likelihood, num_particles):
+    def __init__(self, model, system_noise, likelihood, num_particles):
         """
         model
         x[t+1] = f(t, x[t], u[t], w[t])
@@ -26,28 +25,28 @@ class ParticleFilter(BayesFilter):
         self.num_particles = num_particles
         self.likelihood = likelihood
 
+        self.filter_ensemble = None
+
+    def init_state_variable(self, x, P):
+        """Initialize state variables."""
         # initialize the ensembles.
         self.filter_ensemble = self._initialize_ensemble(
-                                        mu_x_init, cov_x_init, num_particles)
-        self.x_posterior = np.mean(self.filter_ensemble, axis=1)
-
-        self.predict_ensemble = None
+                                    x, P, self.num_particles)
 
     def _initialize_ensemble(self, mu, cov, num):
-        """Initialze the ensemble."""
+        """Initialze a ensemble."""
 
         # ensemble.shape : (dimension of x[t], number of particle)
         x_ensemble_init = np.random.multivariate_normal(mu, cov, size=num).T
 
         return x_ensemble_init
 
-    def filtering(self, t, y):
-        """Calculate the filter ensemble."""
+    def filtering(self, t, predict_ensemble, y):
+        """Compute the posterior, filter ensemble."""
 
         # observation_equation : h(t, x[t], v[t])
         # y_hat.shape : (dimension of y[t], number of particles)
-        y_hat = self.model.observation_equation(
-                                t, self.predict_ensemble)
+        y_hat = self.model.observation_equation(t, predict_ensemble)
         L = self.likelihood.compute(y, y_hat)
 
         # L.shape : (number of particles, )
@@ -62,23 +61,37 @@ class ParticleFilter(BayesFilter):
         # deterministic resampling.
         zeta = (np.arange(self.num_particles) + 0.5) / self.num_particles
 
-        self.filter_ensemble = np.zeros_like(self.predict_ensemble)
+        filter_ensemble = np.zeros_like(predict_ensemble)
         for i in range(self.num_particles):
 
             j = np.where(zeta[i] <= cumulative_proba)[0][0]
 
             # ensemble.shape : (dimension of x[t], number of particles)
-            self.filter_ensemble[:, i] = self.predict_ensemble[:, j]
+            filter_ensemble[:, i] = predict_ensemble[:, j]
 
-        self.x_posterior = np.mean(self.filter_ensemble, axis=1)
+        return filter_ensemble
 
-    def predict(self, t, u):
-        """Calculate the prediction ensemble."""
+    def predict(self, t, filter_ensemble, u):
+        """Compute the prior, prediction ensemble."""
 
         # w_ensemble.shape : (dimension of w[t], number of particles)
         w_ensemble = self.system_noise(self.num_particles)
 
         # predict_ensemble.shape : (dimension of x[t], number of particles)
-        self.predict_ensemble = self.model.state_equation(
-                                        t, self.filter_ensemble,
-                                        u, w_ensemble)
+        predict_ensemble = self.model.state_equation(
+                                            t, filter_ensemble,
+                                            u, w_ensemble)
+
+        return predict_ensemble
+
+    def update_state_variable(self, t, y, u_prev):
+        """Estimate the state variable."""
+
+        # compute x[t|t-1]. need u[t-1], previous input.
+        predict_ensemble = self.predict(
+                                t-1, self.filter_ensemble, u_prev)
+
+        # compute x[t|t]
+        self.filter_ensemble = self.filtering(t, predict_ensemble, y)
+
+        return np.mean(self.filter_ensemble, axis=1), np.mean(predict_ensemble, axis=1)

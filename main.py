@@ -9,7 +9,7 @@ from models import ConstantVelocity2d, GaussianNoise
 from filter import ParticleFilter
 from filter import ExtendedKalmanFilter
 from filter import UnscentedendKalmanFilter
-from filter.likelihood import LikelihoodGaussian
+from filter import LikelihoodGaussian
 
 
 def parse_arguments():
@@ -49,16 +49,16 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def create_nonlinear_filter(args, model, x_init, cov_x, system_noise):
+def create_nonlinear_filter(args, model, system_noise):
 
     if args.filter == 'pf':
         estimator = ParticleFilter(
-                        model, x_init, cov_x, system_noise,
+                        model, system_noise,
                         LikelihoodGaussian(np.diag(args.cov_v)),
                         args.num_particles)
 
     elif args.filter == 'ekf':
-        estimator = ExtendedKalmanFilter(model, x_init, cov_x,
+        estimator = ExtendedKalmanFilter(model,
                                          np.diag(args.cov_w),
                                          np.diag(args.cov_v),
                                          )
@@ -86,7 +86,7 @@ def create_nonlinear_filter(args, model, x_init, cov_x, system_noise):
         cov_additive_v = M @ np.diag(args.cov_v) @ M.T
 
         estimator = UnscentedendKalmanFilter(
-                        model, x_init, cov_x,
+                        model,
                         cov_additive_w,
                         cov_additive_v,
                         args.kappa,
@@ -115,15 +115,18 @@ def generate_time_series_data(num_steps, model, initial_point,
     return x, z
 
 
-def estimate_all_samples(estimator, x, z):
+def estimate_all_samples(estimator, x, z, initial_state, initial_cov):
 
     x_est = np.zeros_like(x)
-    x_est[:, 0] = estimator.x_posterior
     begin = time.time()
-    for t in range(1, z.shape[1]):
+    for t in range(z.shape[1]):
 
-        # estimate the state variable from a observation variable.
-        x_est[:, t] = estimator.estimate(t, z[:, t])
+        if t == 0:
+            estimator.init_state_variable(initial_state, initial_cov)
+            x_est[:, t] = initial_state
+        else:
+            # estimate the state variable from a observation variable.
+            x_est[:, t], _ = estimator.estimate(t, z[:, t])
 
         # check error
         error = x_est[:, t] - x[:, t]
@@ -153,14 +156,14 @@ def main():
     x, z = generate_time_series_data(num_steps, model, initial_point,
                                      system_noise, observation_noise)
 
+    estimator = create_nonlinear_filter(args, model, system_noise)
+
     # set the initial state from the initial measurement.
     initial_state = np.array([z[0, 0]*np.cos(z[1, 0]), 0,
                               z[0, 0]*np.sin(z[1, 0]), 0])
-    estimator = create_nonlinear_filter(args, model,
-                                        initial_state,
-                                        np.diag(args.initial_covariance),
-                                        system_noise)
-    x_est = estimate_all_samples(estimator, x, z)
+    initial_cov = np.diag(args.initial_covariance)
+
+    x_est = estimate_all_samples(estimator, x, z, initial_state, initial_cov)
 
     # evaluation
     error = np.zeros((2, num_steps))
