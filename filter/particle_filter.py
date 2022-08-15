@@ -3,21 +3,23 @@ from .bayes_filter import BayesFilter
 
 
 class ParticleFilter(BayesFilter):
-    """Particle filter class."""
+    """Particle filter class.
+
+    The Particle filter estimates the state variable of a plant.
+    The state space model of the plant is below.
+
+    x[t+1] = f(t, x[t], u[t], w[t])
+    y[t] = h(t, x[t], v[t])
+
+    f: state equation
+    h: observation equation
+    x: state
+    y: output
+    w: system noise
+    v: observation noise
+    """
 
     def __init__(self, model, system_noise, likelihood, num_particles):
-        """
-        model
-        x[t+1] = f(t, x[t], u[t], w[t])
-        y[t] = h(t, x[t], v[t])
-
-        f: state equation
-        h: observation equation
-        x: state
-        y: output
-        w: system noise
-        v: observation noise
-        """
 
         self.model = model
         self.system_noise = system_noise  # w()
@@ -28,13 +30,13 @@ class ParticleFilter(BayesFilter):
         self.filter_ensemble = None
 
     def init_state_variable(self, x, P):
-        """Initialize state variables."""
+        """Initialize the state variable."""
         # initialize the ensembles.
         self.filter_ensemble = self._initialize_ensemble(
                                     x, P, self.num_particles)
 
     def _initialize_ensemble(self, mu, cov, num):
-        """Initialze a ensemble."""
+        """Initialze the ensemble."""
 
         # ensemble.shape : (dimension of x[t], number of particle)
         x_ensemble_init = np.random.multivariate_normal(mu, cov, size=num).T
@@ -85,7 +87,7 @@ class ParticleFilter(BayesFilter):
         return predict_ensemble
 
     def update_state_variable(self, t, y, u_prev):
-        """Estimate the state variable."""
+        """Update the state variable."""
 
         # compute x[t|t-1]. need u[t-1], previous input.
         predict_ensemble = self.predict(

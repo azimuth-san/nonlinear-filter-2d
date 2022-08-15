@@ -3,21 +3,23 @@ from .bayes_filter import BayesFilter
 
 
 class ExtendedKalmanFilter(BayesFilter):
-    """Extended kalman filter class."""
+    """Extended kalman filter class.
+
+    The EKF estimates the state variable of a plant.
+    The state space model of the plant is below.
+
+    x[t+1] = f(t, x[t], u[t], w[t])
+    y[t] = h(t, x[t], v[t])
+
+    f: state equation
+    h: observation equation
+    x: state
+    y: output
+    w: system noise
+    v: observation noise
+    """
 
     def __init__(self, model, cov_w, cov_v):
-        """
-        model
-        x[t+1] = f(t, x[t], u[t], w[t])
-        y[t] = h(t, x[t], v[t])
-
-        f: state equation
-        h: observation equation
-        x: state
-        y: output
-        w: system noise
-        v: observation noise
-        """
 
         self.model = model
 
@@ -33,7 +35,7 @@ class ExtendedKalmanFilter(BayesFilter):
         self.Gain = None
 
     def init_state_variable(self, x, P):
-        """Initialize state variables."""
+        """Initialize the state variable."""
         self.x_post = x
         self.P_post = P
 
@@ -72,7 +74,7 @@ class ExtendedKalmanFilter(BayesFilter):
         return x_prior, P_prior
 
     def update_state_variable(self, t, y, u_prev):
-        """Update the state variables."""
+        """Update the state variable."""
 
         # compute x[t|t-1]. need u[t-1], previous input.
         x_prior, P_prior = self.predict(

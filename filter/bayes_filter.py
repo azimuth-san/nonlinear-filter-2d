@@ -6,14 +6,14 @@ class BayesFilter(ABC):
 
     @abstractmethod
     def init_state_variable(self, x, P):
-        """Initialize state variables."""
+        """Initialize the state variable."""
 
     @abstractmethod
     def update_state_variable(self, t, y, u_prev=0):
         """Update the state variables."""
 
     def estimate(self, t, y, u_prev=0):
-        """Estimate the state variables."""
+        """Estimate the state variable."""
 
         # update the posterior and prior
         x_post, x_pred = self.update_state_variable(t, y, u_prev)

@@ -45,7 +45,7 @@ class UnscentedendKalmanFilter(BayesFilter):
         self.decompose_method = decompose_method.lower()
 
     def init_state_variable(self, x, P):
-        """Initialize state variables."""
+        """Initialize the state variable."""
         self.x_post = x
         self.P_post = P
 
