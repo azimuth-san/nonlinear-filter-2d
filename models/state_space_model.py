@@ -71,3 +71,17 @@ class StateSpaceModel(ABC):
         This method is needed in the extended kalman filter.
         """
         raise NotImplementedError
+
+    def Lt(self, t):
+        """x[t+1] = f(x[t], u[t], t) + L[t] * w[t]
+
+        In case of system noise is additive, return L[t].
+        """
+        raise NotImplementedError
+
+    def Mt(self, t):
+        """y[t] = h(x[t], t) + M[t] * v[t]
+
+        In case of observatoin noise is additive, return M[t].
+        """
+        raise NotImplementedError

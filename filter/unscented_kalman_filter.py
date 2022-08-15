@@ -3,22 +3,24 @@ from .bayes_filter import BayesFilter
 
 
 class UnscentedendKalmanFilter(BayesFilter):
-    """Unscented kalman filter class."""
+    """Unscented kalman filter class.
+
+    The UKF estimates the state variable of a plant.
+    The state space model of the plant is below.
+
+    x[t+1] = f(t, x[t], u[t]) + L[t] * w[t]
+    y[t] = h(t, x[t]) + M[t] * v[t]
+
+    f: state equation
+    h: observation equation
+    x: state
+    y: output
+    w: system noise (additive)
+    v: observation noise (additive)
+    """
 
     def __init__(self, model, cov_w, cov_v,
                  kappa=0, decompose_method='cholesky'):
-        """
-        model
-        x[t+1] = f(t, x[t], u[t]) + w[t]
-        y[t] = h(t, x[t]) + v[t]
-
-        f: state equation
-        h: observation equation
-        x: state
-        y: output
-        w: system noise (additive)
-        v: observation noise (additive)
-        """
 
         self.model = model
 
@@ -75,10 +77,11 @@ class UnscentedendKalmanFilter(BayesFilter):
         y_sigmas = self.model.observation_equation(t, x_sigmas)
         y_hat = np.sum(self.weights * y_sigmas, axis=1)
 
+        M = self.model.Mt(t)
         # add the new axis for broadcast.
         # y.shape: (d,) -> (d, 1) -> (d, num_sigma_points)
         y_error = y_sigmas - y_hat[:, np.newaxis]
-        Py = (self.weights * y_error) @ y_error.T + self.cov_v
+        Py = (self.weights * y_error) @ y_error.T + M @ self.cov_v @ M.T
 
         x_error = x_sigmas - x_prior[:, np.newaxis]
         x_error = x_sigmas - x_prior[:, np.newaxis]
@@ -102,13 +105,14 @@ class UnscentedendKalmanFilter(BayesFilter):
         # update the prior.
         x_prior = np.sum(self.weights * x_sigmas_next, axis=1)
 
+        L = self.model.Lt(t)
         x_error = x_prior[:, np.newaxis] - x_sigmas_next
-        P_prior = (self.weights * x_error) @ x_error.T + self.cov_w
+        P_prior = (self.weights * x_error) @ x_error.T + L @ self.cov_w @ L.T
 
         return x_prior, P_prior
 
     def update_state_variable(self, t, y, u_prev):
-        """Update the state variables."""
+        """Update the state variable."""
 
         # compute x[t|t-1]. need u[t-1], previous input.
         x_prior, P_prior = self.predict(

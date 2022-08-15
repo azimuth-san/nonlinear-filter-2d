@@ -77,11 +77,7 @@ class ConstantVelocity2d(StateSpaceModel):
 
         (df/dw)(x), x[t+1] = f(x[t], u[t], w[t], t).
         """
-        L = np.array([[0.5 * (self.dt**2), 0],
-                     [self.dt, 0],
-                     [0, 0.5 * (self.dt**2)],
-                     [0, self.dt]])
-        return L
+        return self.Lt(t)
 
     def Jh_x(self, t, x):
         """The Jacobian of the observation equation.
@@ -97,5 +93,23 @@ class ConstantVelocity2d(StateSpaceModel):
         """The Jacobian of the observation equation.
 
         (dh/dv)(x), y[t] = h(x[t], v[t], t)
+        """
+        return self.Mt(t)
+
+    def Lt(self, t):
+        """x[t+1] = f(x[t], u[t], t) + L[t] * w[t]
+
+        In case of system noise is additive, return L[t].
+        """
+        L = np.array([[0.5 * (self.dt**2), 0],
+                     [self.dt, 0],
+                     [0, 0.5 * (self.dt**2)],
+                     [0, self.dt]])
+        return L
+
+    def Mt(self, t):
+        """z[t] = h(x[t], t) + M[t] * v[t]
+
+        In case of observatoin noise is additive, return M[t].
         """
         return np.eye(2)

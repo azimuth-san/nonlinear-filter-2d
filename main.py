@@ -63,32 +63,10 @@ def create_nonlinear_filter(args, model, system_noise):
                                          np.diag(args.cov_v),
                                          )
     elif args.filter == 'ukf':
-        """
-        For simplicity, in the ukf,
-        deal with system and observation noise as additive.
-
-        f(t, x, u, w) = f'(t, x, u) + L * w = f'(t, x, u) + w'
-        Cov(w) = Q -> Cov(w') = Cov(L * w) = L * Q * L.T
-
-        h(t, x, v) = h'(t, x) + M * v = h(t, x) + v'
-        Cov(v) = R -> Cov(v') = Cov(M * v) = M * R * M.T
-        """
-
-        # see the state equation of the model.
-        L = np.array([[0.5 * (args.dt**2), 0],
-                      [args.dt, 0],
-                      [0, 0.5 * (args.dt**2)],
-                      [0, args.dt]])
-        cov_additive_w = L @ np.diag(args.cov_w) @ L.T
-
-        # see the observation equation of the model
-        M = np.eye(model.NDIM['v'])
-        cov_additive_v = M @ np.diag(args.cov_v) @ M.T
-
         estimator = UnscentedendKalmanFilter(
                         model,
-                        cov_additive_w,
-                        cov_additive_v,
+                        np.diag(args.cov_w),
+                        np.diag(args.cov_v),
                         args.kappa,
                         args.decompose,
                         )
